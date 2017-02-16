@@ -1,0 +1,43 @@
+apply plugin: 'java'
+apply plugin: 'eclipse'
+
+sourceCompatibility = 1.7
+targetCompatibility = 1.7
+
+def jarName = "${project.name}.jar"
+
+def jarCopySpec = copySpec {
+   
+	def cfg = new Properties()
+    cfg.put('jarname', jarName.toString())
+   
+	from(file("src/main/resources")) {
+        include 'file_inputs.txt'
+    }
+	
+	from(jar) {
+        rename jarName, "${cfg.jarname}"
+    }
+}
+
+jar () {
+	
+	from(configurations.runtime.collect { it.isDirectory() ? it : zipTree(it) })
+	
+    manifest {
+        attributes 'Implementation-Title': 'Parking-Lot',
+                'Built-Date': new Date(),
+                'Built-JDK': System.getProperty('java.version'),
+				'Main-Class': 'org.gojek.main.ParkingLotInit'
+    }
+}
+
+task installApp(type: Sync) {
+    description 'Installs Parking-Lot application'
+    into { file("${project.buildDir}/install/${project.name}") }
+    with jarCopySpec
+}
+
+tasks.withType(JavaCompile) {
+  options.compilerArgs << "-Xlint:all" << "-Xlint:-processing" << "-Xlint:-serial" << "-Werror"
+}
